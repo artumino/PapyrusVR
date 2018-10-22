@@ -1,6 +1,6 @@
 #pragma once
 #include "../PapyrusVRTypes.h"
-#include "skse64/PapyrusNativeFunctions.h"
+#include "PapyrusNativeFunctions.h"
 
 namespace PapyrusVR
 {
@@ -42,5 +42,6 @@ namespace PapyrusVR
 
 		//Game Variables
 		static void SetVRGameScale(float VRWorldScale);
+		static void SetupConversion();
 	};
 }

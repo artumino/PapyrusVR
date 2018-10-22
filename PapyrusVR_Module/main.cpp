@@ -7,6 +7,7 @@
 #include "VRManager.h"
 #include "api/VRManagerAPI.h"
 #include "hooks/openvr_hook.h"
+#include "api/utils/OpenVRUtils.h"
 
 static PluginHandle					g_pluginHandle = kPluginHandle_Invalid;
 static SKSEPapyrusInterface         * g_papyrus = NULL;
@@ -52,6 +53,13 @@ void OnSKSEMessageReceived(SKSEMessagingInterface::Message* message)
 		{
 			//Register manifest file
 			PapyrusVR::VRManager::GetInstance().RegisterInputActions();
+		}
+
+		if (message->type == SKSEMessagingInterface::kMessage_PostLoadGame)
+		{
+			//Get player nodes, etc.
+			
+			PapyrusVR::OpenVRUtils::SetupConversion();
 		}
 	}
 }

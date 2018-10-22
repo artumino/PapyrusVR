@@ -1,4 +1,5 @@
 #include "OpenVRUtils.h"
+#include "GameSettings.h"
 
 namespace PapyrusVR
 {
@@ -256,41 +257,6 @@ namespace PapyrusVR
 		matrix->m[0][3] = position.x * OpenVRUtils::SkyrimUnitsToMetersFactor;
 		matrix->m[1][3] = position.z * OpenVRUtils::SkyrimUnitsToMetersFactor;
 		matrix->m[2][3] = -temp * OpenVRUtils::SkyrimUnitsToMetersFactor;
-		/*Vector3 temp;
-
-		//Swaps collumns
-		temp.x = matrix->m[0][1];
-		temp.y = -matrix->m[1][1];
-		temp.z = -matrix->m[2][1];
-
-		matrix->m[0][1] = matrix->m[0][2];
-		matrix->m[1][1] = -matrix->m[1][2];
-		matrix->m[2][1] = matrix->m[2][2];
-
-		matrix->m[0][2] = temp.x;
-		matrix->m[1][2] = temp.y;
-		matrix->m[2][2] = temp.z;
-
-		//Spaws rows
-		temp.x = matrix->m[1][0];
-		temp.y = matrix->m[1][1];
-		temp.z = -matrix->m[1][2];
-
-		matrix->m[1][0] = matrix->m[2][0];
-		matrix->m[1][1] = -matrix->m[2][1];
-		matrix->m[1][2] = matrix->m[2][2];
-
-		matrix->m[2][0] = temp.x;
-		matrix->m[2][1] = temp.y;
-		matrix->m[2][2] = temp.z;
-
-		//Swaps YZ in Traslation Vector (and adjusts Z sign)
-		temp.y = matrix->m[1][3] * OpenVRUtils::SkyrimUnitsToMetersFactor;
-		matrix->m[1][3] = matrix->m[2][3] * OpenVRUtils::SkyrimUnitsToMetersFactor;
-		matrix->m[2][3] = -temp.y; //Invert sign
-
-		//Converts remaining parameters
-		matrix->m[0][3] *= OpenVRUtils::SkyrimUnitsToMetersFactor;*/
 	}
 
 	void OpenVRUtils::SteamVRTransformToSkyrimTransform(Matrix34* matrix)
@@ -312,5 +278,14 @@ namespace PapyrusVR
 	{
 		OpenVRUtils::MetersToSkyrimUnitsFactor = VRWorldScale;
 		OpenVRUtils::SkyrimUnitsToMetersFactor = 1 / VRWorldScale;
+	}
+
+	void OpenVRUtils::SetupConversion()
+	{
+		//Set VR Scale
+		double vrScale = 75.0;
+		if (!GetINISetting("vrScale")->GetDouble(&vrScale))
+			_MESSAGE("Failed to get vr scale from INI, defaulting back to 75");
+		PapyrusVR::OpenVRUtils::SetVRGameScale(vrScale);
 	}
 }
