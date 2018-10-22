@@ -282,10 +282,15 @@ namespace PapyrusVR
 
 	void OpenVRUtils::SetupConversion()
 	{
+		_MESSAGE("[OpenVRUtils] Game Loaded, getting VR Scale");
 		//Set VR Scale
 		double vrScale = 75.0;
-		if (!GetINISetting("vrScale")->GetDouble(&vrScale))
-			_MESSAGE("Failed to get vr scale from INI, defaulting back to 75");
+		Setting * setting = GetINISetting("fVrScale:VR");
+		if (!setting || setting->GetType() != Setting::kType_Float)
+			_MESSAGE("[OpenVRUtils] Failed to get vr scale from INI, defaulting back to 75");
+		else
+			vrScale = setting->data.f32;
+		_MESSAGE("[OpenVRUtils] Loaded vrScale with value %f", vrScale);
 		PapyrusVR::OpenVRUtils::SetVRGameScale(vrScale);
 	}
 }
