@@ -182,7 +182,8 @@ namespace PapyrusVR
 		}
 	#pragma endregion
 
-	//Conversions
+	#pragma region Conversions
+
 	void OpenVRUtils::CopyQuaternionToVMArray(Quaternion* quaternion, VMArray<float>* arr)
 	{
 		float value;
@@ -245,34 +246,6 @@ namespace PapyrusVR
 		}
 	}
 
-	void OpenVRUtils::SkyrimTransformToSteamVRTransform(Matrix34* matrix)
-	{
-		Vector3 position = OpenVRUtils::GetPosition(matrix);
-		Matrix33 rotation = Matrix33FromTransform(matrix);
-
-		Matrix33 SkyrimRotation = TConversionMatrix * (rotation * ConversionMatrix);
-		*matrix = Matrix34FromRotation(&SkyrimRotation);
-
-		float temp = position.y;
-		matrix->m[0][3] = position.x * OpenVRUtils::SkyrimUnitsToMetersFactor;
-		matrix->m[1][3] = position.z * OpenVRUtils::SkyrimUnitsToMetersFactor;
-		matrix->m[2][3] = -temp * OpenVRUtils::SkyrimUnitsToMetersFactor;
-	}
-
-	void OpenVRUtils::SteamVRTransformToSkyrimTransform(Matrix34* matrix)
-	{
-		Vector3 position = OpenVRUtils::GetPosition(matrix);
-		Matrix33 rotation = Matrix33FromTransform(matrix);
-		
-		Matrix33 SkyrimRotation = ConversionMatrix * (rotation * TConversionMatrix);
-		*matrix = Matrix34FromRotation(&SkyrimRotation);
-
-		float temp = position.y;
-		matrix->m[0][3] = position.x * OpenVRUtils::MetersToSkyrimUnitsFactor;
-		matrix->m[1][3] = -position.z * OpenVRUtils::MetersToSkyrimUnitsFactor;
-		matrix->m[2][3] = temp * OpenVRUtils::MetersToSkyrimUnitsFactor;
-	}
-
 	void OpenVRUtils::CopyMatrix34ToNiTrasform(Matrix34* matrix, NiTransform* transform)
 	{
 		//Position
@@ -314,6 +287,40 @@ namespace PapyrusVR
 		matrix->m[2][1] = transform->rot.data[2][1];
 		matrix->m[2][2] = transform->rot.data[2][2];
 	}
+
+	#pragma endregion
+
+	#pragma region Coordinate Transforms
+
+	void OpenVRUtils::SkyrimTransformToSteamVRTransform(Matrix34* matrix)
+	{
+		Vector3 position = OpenVRUtils::GetPosition(matrix);
+		Matrix33 rotation = Matrix33FromTransform(matrix);
+
+		Matrix33 SkyrimRotation = TConversionMatrix * (rotation * ConversionMatrix);
+		*matrix = Matrix34FromRotation(&SkyrimRotation);
+
+		float temp = position.y;
+		matrix->m[0][3] = position.x * OpenVRUtils::SkyrimUnitsToMetersFactor;
+		matrix->m[1][3] = position.z * OpenVRUtils::SkyrimUnitsToMetersFactor;
+		matrix->m[2][3] = -temp * OpenVRUtils::SkyrimUnitsToMetersFactor;
+	}
+
+	void OpenVRUtils::SteamVRTransformToSkyrimTransform(Matrix34* matrix)
+	{
+		Vector3 position = OpenVRUtils::GetPosition(matrix);
+		Matrix33 rotation = Matrix33FromTransform(matrix);
+
+		Matrix33 SkyrimRotation = ConversionMatrix * (rotation * TConversionMatrix);
+		*matrix = Matrix34FromRotation(&SkyrimRotation);
+
+		float temp = position.y;
+		matrix->m[0][3] = position.x * OpenVRUtils::MetersToSkyrimUnitsFactor;
+		matrix->m[1][3] = -position.z * OpenVRUtils::MetersToSkyrimUnitsFactor;
+		matrix->m[2][3] = temp * OpenVRUtils::MetersToSkyrimUnitsFactor;
+	}
+
+	#pragma endregion
 
 	void OpenVRUtils::SetVRGameScale(float VRWorldScale)
 	{

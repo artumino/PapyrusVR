@@ -7,7 +7,7 @@
 #include "NiNodes.h"
 #include "VRManager.h"
 #include "api/utils/OpenVRUtils.h"
-#define DEBUG_CONVERSION true
+#define DEBUG_CONVERSION false
 
 using namespace PapyrusVR;
 
@@ -32,9 +32,11 @@ namespace Kinematrix
 	static PapyrusVR::Matrix34 rightMatrix;
 	static NiTransform localRightTransform;
 	static NiTransform worldRightTransform;
+	static NiTransform worldParentInvRightTransform;
 	static PapyrusVR::Matrix34 leftMatrix;
 	static NiTransform localLeftTransform;
 	static NiTransform worldLeftTransform;
+	static NiTransform worldParentInvLeftTransform;
 
 	#if DEBUG_CONVERSION
 	static std::mutex debugMutex;
@@ -86,10 +88,14 @@ namespace Kinematrix
 		leftFoot = ni_cast(mostInterestingRoot->GetObjectByName(&NPC_LFoot.data), NiNode);
 		if (!leftFoot)
 			_MESSAGE("Error while getting NPC_LFoot node");
+		else
+			_MESSAGE("NPC_LFoot scale %f", leftFoot->m_worldTransform.scale);
 
 		rightFoot = ni_cast(mostInterestingRoot->GetObjectByName(&NPC_RFoot.data), NiNode);
 		if (!rightFoot)
 			_MESSAGE("Error while getting NPC_RFoot node");
+		else
+			_MESSAGE("NPC_RFoot scale %f", rightFoot->m_worldTransform.scale);
 
 		VRManager::GetInstance().RegisterVRUpdateListener(OnPoseUpdate);
 		
@@ -158,7 +164,9 @@ namespace Kinematrix
 			OpenVRUtils::CopyMatrix34ToNiTrasform(&rightMatrix, &localRightTransform);
 
 			worldRightTransform = roomNode->m_worldTransform * localRightTransform;
-			rightFoot->m_worldTransform = worldRightTransform;
+
+			rightFoot->m_parent->m_worldTransform.Invert(worldParentInvRightTransform);
+			rightFoot->m_localTransform = worldParentInvRightTransform * worldRightTransform;
 			TaskInterface::UpdateWorldData(rightFoot);
 		}
 
@@ -167,7 +175,11 @@ namespace Kinematrix
 			OpenVRUtils::CopyMatrix34ToNiTrasform(&leftMatrix, &localLeftTransform);
 
 			worldLeftTransform = roomNode->m_worldTransform * localLeftTransform;
-			leftFoot->m_worldTransform = worldLeftTransform;
+
+			//leftFoot->m_worldTransform = worldLeftTransform;
+			//We need to alter the local transform or skyrim will ignore the change
+			leftFoot->m_parent->m_worldTransform.Invert(worldParentInvLeftTransform);
+			leftFoot->m_localTransform = worldParentInvLeftTransform * worldLeftTransform;
 			TaskInterface::UpdateWorldData(leftFoot);
 		}
 	}
