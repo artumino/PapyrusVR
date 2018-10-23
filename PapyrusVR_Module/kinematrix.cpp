@@ -6,19 +6,39 @@
 #include "NiTypes.h"
 #include "NiNodes.h"
 #include "VRManager.h"
+#include "api/utils/OpenVRUtils.h"
+#define DEBUG_CONVERSION true
 
+using namespace PapyrusVR;
 
 namespace Kinematrix
 {
 	static BSFixedString NPC_Right_Hand("NPC R Hand [RHnd]");
 	static BSFixedString RoomNode("RoomNode");
+	static BSFixedString RightWandNode("RightWandNode");
 	static BSFixedString NPC_LBody("CME LBody [LBody]");
+	static BSFixedString NPC_LFoot("CME L Foot [Lft ]");
+	static BSFixedString NPC_RFoot("CME R Foot [Rft ]");
 	static NiAVObject* rootNode = nullptr;
+	static NiNode* rightWandNode = nullptr;
 	static NiNode* rootNodeTP = nullptr;
 	static NiNode* rootNodeFP = nullptr;
 	static NiNode* roomNode = nullptr;
-	static NiNode* lowerBody = nullptr;
+	static NiNode* leftFoot = nullptr;
+	static NiNode* rightFoot = nullptr;
 	static NiNode* rightHandNode = nullptr;
+
+	static PapyrusVR::Matrix34 roomMatrix;
+	static PapyrusVR::Matrix34 rightMatrix;
+	static NiTransform localRightTransform;
+	static NiTransform worldRightTransform;
+	static PapyrusVR::Matrix34 leftMatrix;
+	static NiTransform localLeftTransform;
+	static NiTransform worldLeftTransform;
+
+	#if DEBUG_CONVERSION
+	static std::mutex debugMutex;
+	#endif
 
 	void GameLoaded()
 	{
@@ -51,36 +71,104 @@ namespace Kinematrix
 
 		_MESSAGE("Getting RoomNode node");
 		roomNode = ni_cast(rootNode->GetObjectByName(&RoomNode.data), NiNode);
-
 		if (!roomNode)
 			_MESSAGE("Error while getting RoomNode node");
 		else
 			_MESSAGE("Room Node scale %f", roomNode->m_worldTransform.scale);
 
-		lowerBody = ni_cast(mostInterestingRoot->GetObjectByName(&NPC_LBody.data), NiNode);
-		if (!lowerBody)
-			_MESSAGE("Error while getting NPC_LBody node");
+		_MESSAGE("Getting Right Wand node");
+		rightWandNode = ni_cast(rootNode->GetObjectByName(&RightWandNode.data), NiNode);
+		if (!rightWandNode)
+			_MESSAGE("Error while getting RightWandNode node");
+		else
+			_MESSAGE("RightWandNode scale %f", rightWandNode->m_worldTransform.scale);
 
-		PapyrusVR::VRManager::GetInstance().RegisterVRUpdateListener(OnPoseUpdate);
+		leftFoot = ni_cast(mostInterestingRoot->GetObjectByName(&NPC_LFoot.data), NiNode);
+		if (!leftFoot)
+			_MESSAGE("Error while getting NPC_LFoot node");
+
+		rightFoot = ni_cast(mostInterestingRoot->GetObjectByName(&NPC_RFoot.data), NiNode);
+		if (!rightFoot)
+			_MESSAGE("Error while getting NPC_RFoot node");
+
+		VRManager::GetInstance().RegisterVRUpdateListener(OnPoseUpdate);
+		
+		#if DEBUG_CONVERSION
+		VRManager::GetInstance().RegisterVRButtonListener(OnVRButtonEvent);
+		#endif
+
+		localRightTransform.scale = 1;
+		localLeftTransform.scale = 1;
+	}
+
+	void OnVRButtonEvent(VREventType eventType, EVRButtonId buttonID, VRDevice device)
+	{
+		#if DEBUG_CONVERSION
+		if (eventType == VREventType::VREventType_Pressed && device == VRDevice::VRDevice_RightController && buttonID == EVRButtonId::k_EButton_SteamVR_Trigger)
+		{
+			std::lock_guard<std::mutex> lock(debugMutex);
+
+			_MESSAGE("[DEBUG] -------------............---------------");
+			_MESSAGE("[DEBUG] Debug information on matrixes");
+			_MESSAGE("[DEBUG] ------------- Local Converted ---------------");
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightMatrix.m[0][0], rightMatrix.m[0][1], rightMatrix.m[0][2], rightMatrix.m[0][3]);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightMatrix.m[1][0], rightMatrix.m[1][1], rightMatrix.m[1][2], rightMatrix.m[1][3]);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightMatrix.m[2][0], rightMatrix.m[2][1], rightMatrix.m[2][2], rightMatrix.m[2][3]);
+			_MESSAGE("[DEBUG] Scale: %f", 1.0f);
+			_MESSAGE("[DEBUG] ------------- Local Game WND ---------------");
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_localTransform.rot.data[0][0], rightWandNode->m_localTransform.rot.data[0][1], rightWandNode->m_localTransform.rot.data[0][2], rightWandNode->m_localTransform.pos.x);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_localTransform.rot.data[1][0], rightWandNode->m_localTransform.rot.data[1][1], rightWandNode->m_localTransform.rot.data[1][2], rightWandNode->m_localTransform.pos.y);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_localTransform.rot.data[2][0], rightWandNode->m_localTransform.rot.data[2][1], rightWandNode->m_localTransform.rot.data[2][2], rightWandNode->m_localTransform.pos.z);
+			_MESSAGE("[DEBUG] Scale: %f", rightWandNode->m_localTransform.scale);
+			_MESSAGE("[DEBUG] -------------............---------------");
+			_MESSAGE("[DEBUG] -------------............---------------");
+			_MESSAGE("[DEBUG] ------------- World Converted ---------------");
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", worldRightTransform.rot.data[0][0], worldRightTransform.rot.data[0][1], worldRightTransform.rot.data[0][2], worldRightTransform.pos.x);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", worldRightTransform.rot.data[1][0], worldRightTransform.rot.data[1][1], worldRightTransform.rot.data[1][2], worldRightTransform.pos.y);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", worldRightTransform.rot.data[2][0], worldRightTransform.rot.data[2][1], worldRightTransform.rot.data[2][2], worldRightTransform.pos.z);
+			_MESSAGE("[DEBUG] Scale: %f", worldRightTransform.scale);
+			_MESSAGE("[DEBUG] ------------- World Game WND ---------------");
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_worldTransform.rot.data[0][0], rightWandNode->m_worldTransform.rot.data[0][1], rightWandNode->m_worldTransform.rot.data[0][2], rightWandNode->m_worldTransform.pos.x);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_worldTransform.rot.data[1][0], rightWandNode->m_worldTransform.rot.data[1][1], rightWandNode->m_worldTransform.rot.data[1][2], rightWandNode->m_worldTransform.pos.y);
+			_MESSAGE("[DEBUG] [ %f \t %f \t %f \t %f ]", rightWandNode->m_worldTransform.rot.data[2][0], rightWandNode->m_worldTransform.rot.data[2][1], rightWandNode->m_worldTransform.rot.data[2][2], rightWandNode->m_worldTransform.pos.z);
+			_MESSAGE("[DEBUG] Scale: %f", rightWandNode->m_worldTransform.scale);
+			_MESSAGE("[DEBUG] -------------............---------------");
+		}
+		#endif
 	}
 
 	void OnPoseUpdate(float deltaTime)
 	{
-		if (lowerBody != nullptr)
-		{
-			//Rotates hand
-			NiMatrix33* rotation = new NiMatrix33();
-			float angle = 10 * deltaTime;
-			rotation->data[0][0] = 1;
-			rotation->data[1][1] = cos(angle);
-			rotation->data[1][2] = sin(angle);
-			rotation->data[2][1] = -sin(angle);
-			rotation->data[2][2] = cos(angle);
+		#if DEBUG_CONVERSION
+		//If debugging is enabled, lock matrixes
+		std::lock_guard<std::mutex> lock(debugMutex);
+		#endif
 
-			//NiPoint3* translation = new NiPoint3(0, 0, 0);
-			lowerBody->m_localTransform.rot = lowerBody->m_localTransform.rot * (*rotation);
-			TaskInterface::UpdateWorldData(lowerBody);
-			//(*g_thePlayer)->_QueueNiNodeUpdate_GetPtr()
+		TrackedDevicePose* leftHandSVRPose = VRManager::GetInstance().GetLeftHandPose();
+		TrackedDevicePose* rightHandSVRPose = VRManager::GetInstance().GetRightHandPose();
+		rightMatrix = rightHandSVRPose->mDeviceToAbsoluteTracking;
+		leftMatrix = leftHandSVRPose->mDeviceToAbsoluteTracking;
+
+		//Do Offset conversions
+		OpenVRUtils::SteamVRTransformToSkyrimTransform(&rightMatrix);
+		OpenVRUtils::SteamVRTransformToSkyrimTransform(&leftMatrix);
+
+		if (rightFoot != nullptr)
+		{
+			OpenVRUtils::CopyMatrix34ToNiTrasform(&rightMatrix, &localRightTransform);
+
+			worldRightTransform = roomNode->m_worldTransform * localRightTransform;
+			rightFoot->m_worldTransform = worldRightTransform;
+			TaskInterface::UpdateWorldData(rightFoot);
+		}
+
+		if (leftFoot != nullptr)
+		{
+			OpenVRUtils::CopyMatrix34ToNiTrasform(&leftMatrix, &localLeftTransform);
+
+			worldLeftTransform = roomNode->m_worldTransform * localLeftTransform;
+			leftFoot->m_worldTransform = worldLeftTransform;
+			TaskInterface::UpdateWorldData(leftFoot);
 		}
 	}
 }

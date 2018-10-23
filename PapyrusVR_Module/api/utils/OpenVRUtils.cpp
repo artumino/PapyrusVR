@@ -273,6 +273,47 @@ namespace PapyrusVR
 		matrix->m[2][3] = temp * OpenVRUtils::MetersToSkyrimUnitsFactor;
 	}
 
+	void OpenVRUtils::CopyMatrix34ToNiTrasform(Matrix34* matrix, NiTransform* transform)
+	{
+		//Position
+		transform->pos.x = matrix->m[0][3];
+		transform->pos.y = matrix->m[1][3];
+		transform->pos.z = matrix->m[2][3];
+
+		//Rotation
+		transform->rot.data[0][0] = matrix->m[0][0];
+		transform->rot.data[0][1] = matrix->m[0][1];
+		transform->rot.data[0][2] = matrix->m[0][2];
+
+		transform->rot.data[1][0] = matrix->m[1][0];
+		transform->rot.data[1][1] = matrix->m[1][1];
+		transform->rot.data[1][2] = matrix->m[1][2];
+
+		transform->rot.data[2][0] = matrix->m[2][0];
+		transform->rot.data[2][1] = matrix->m[2][1];
+		transform->rot.data[2][2] = matrix->m[2][2];
+	}
+
+	void OpenVRUtils::CopyNiTrasformToMatrix34(NiTransform* transform, Matrix34* matrix)
+	{
+		//Position
+		matrix->m[0][3] = transform->pos.x;
+		matrix->m[1][3] = transform->pos.y;
+		matrix->m[2][3] = transform->pos.z;
+
+		//Rotation
+		matrix->m[0][0] = transform->rot.data[0][0];
+		matrix->m[0][1] = transform->rot.data[0][1];
+		matrix->m[0][2] = transform->rot.data[0][2];
+
+		matrix->m[1][0] = transform->rot.data[1][0];
+		matrix->m[1][1] = transform->rot.data[1][1];
+		matrix->m[1][2] = transform->rot.data[1][2];
+
+		matrix->m[2][0] = transform->rot.data[2][0];
+		matrix->m[2][1] = transform->rot.data[2][1];
+		matrix->m[2][2] = transform->rot.data[2][2];
+	}
 
 	void OpenVRUtils::SetVRGameScale(float VRWorldScale)
 	{
