@@ -250,7 +250,7 @@ namespace PapyrusVR
 		Vector3 position = OpenVRUtils::GetPosition(matrix);
 		Matrix33 rotation = Matrix33FromTransform(matrix);
 
-		Matrix33 SkyrimRotation = TConversionMatrix * rotation * ConversionMatrix;
+		Matrix33 SkyrimRotation = TConversionMatrix * (rotation * ConversionMatrix);
 		*matrix = Matrix34FromRotation(&SkyrimRotation);
 
 		float temp = position.y;
@@ -264,7 +264,7 @@ namespace PapyrusVR
 		Vector3 position = OpenVRUtils::GetPosition(matrix);
 		Matrix33 rotation = Matrix33FromTransform(matrix);
 		
-		Matrix33 SkyrimRotation = ConversionMatrix * rotation * TConversionMatrix;
+		Matrix33 SkyrimRotation = ConversionMatrix * (rotation * TConversionMatrix);
 		*matrix = Matrix34FromRotation(&SkyrimRotation);
 
 		float temp = position.y;
